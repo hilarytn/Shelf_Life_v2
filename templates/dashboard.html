@@ -22,6 +22,43 @@
         .full-width {
             width: 100%;
         }
+        .card-summary {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        .spinner-overlay {
+            position: relative;
+            height: 100%;
+            width: 100%;
+            display: none;
+        }
+        .spinner-overlay.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.5);
+            z-index: 1000;
+        }
+        .pagination {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .pagination a {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 0 5px;
+            border: 1px solid #333; /* Dark gray border */
+            cursor: pointer;
+            text-decoration: none;
+            color: #333; /* Dark gray text */
+        }
+        .pagination a.active {
+            background-color: #333; /* Dark gray background */
+            color: #fff; /* White text */
+            border: 1px solid #333; /* Dark gray border */
+        }
     </style>
 </head>
 <body>
@@ -29,39 +66,50 @@
         <h1 class="text-center">Dashboard</h1>
         
         <div class="row justify-content-center">
-            <div class="col-md-8">
-                <h3>Scores Summary</h3>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Score</th>
-                            <th>Count</th>
-                            <th>Percentage (%)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for score, data in counts.items() %}
-                        <tr>
-                            <td>{{ score }}</td>
-                            <td>{{ data.count }}</td>
-                            <td>{{ data.percentage }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="col-md-12">
+                <div class="card-summary">
+                    <h3>Scores Summary</h3>
+                    <table class="table" id="summaryTable">
+                        <thead>
+                            <tr>
+                                <th>Score</th>
+                                <th>Count</th>
+                                <th>Percentage (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for score, data in counts.items() %}
+                            <tr>
+                                <td>{{ score }}</td>
+                                <td>{{ data.count }}</td>
+                                <td>{{ data.percentage }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <div class="row justify-content-center">
+            <h3>Charts</h3>
             <div class="col-md-6">
                 <div class="card">
-                    <h2 class="card-title text-center">Pie Chart</h2>
+                    <h2 class="card-title text-center"></h2>
+                    <div class="spinner-overlay" id="pieSpinner">
+                        <div class="spinner-border" role="status"></div>
+                        <span>We are charting your data...</span>
+                    </div>
                     <div id="pieChart" class="chart-container"></div>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="card">
-                    <h2 class="card-title text-center">Bar Chart</h2>
+                    <h2 class="card-title text-center"></h2>
+                    <div class="spinner-overlay" id="barSpinner">
+                        <div class="spinner-border" role="status"></div>
+                        <span>We are charting your data...</span>
+                    </div>
                     <div id="barChart" class="chart-container"></div>
                 </div>
             </div>
@@ -71,7 +119,7 @@
             <div class="col-md-12">
                 <div class="card">
                     <h2 class="card-title text-center">Filtered Data</h2>
-                    <table class="table full-width">
+                    <table class="table full-width" id="filteredTable">
                         <thead>
                             <tr>
                                 <th>Date</th>
@@ -91,6 +139,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    <div class="pagination" id="filteredPagination"></div>
                 </div>
             </div>
         </div>
@@ -100,6 +149,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            var pieSpinner = document.getElementById('pieSpinner');
+            var barSpinner = document.getElementById('barSpinner');
+
+            // Show spinners when charts are being loaded
+            pieSpinner.classList.add('show');
+            barSpinner.classList.add('show');
+
             // Prepare data for the pie chart
             var pieChartData = [];
             {% for score, data in counts.items() %}
@@ -109,7 +165,13 @@
             // Render the pie chart
             Highcharts.chart('pieChart', {
                 chart: {
-                    type: 'pie'
+                    type: 'pie',
+                    events: {
+                        load: function () {
+                            // Hide spinner when chart is loaded
+                            pieSpinner.classList.remove('show');
+                        }
+                    }
                 },
                 title: {
                     text: 'Score Distribution'
@@ -148,7 +210,13 @@
             // Render the bar chart
             Highcharts.chart('barChart', {
                 chart: {
-                    type: 'bar'
+                    type: 'bar',
+                    events: {
+                        load: function () {
+                            // Hide spinner when chart is loaded
+                            barSpinner.classList.remove('show');
+                        }
+                    }
                 },
                 title: {
                     text: 'Score Counts'
@@ -178,7 +246,54 @@
                     }
                 }]
             });
+
+            // Pagination for filtered data table
+            var filteredTable = document.getElementById('filteredTable');
+            var filteredPagination = document.getElementById('filteredPagination');
+            paginateTable(filteredTable, filteredPagination);
         });
+
+        function paginateTable(table, pagination) {
+            var rowsShown = 20; // Show 20 rows per page
+            var rowsTotal = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr').length;
+            var numPages = Math.ceil(rowsTotal / rowsShown);
+            for (var i = 0; i < numPages; i++) {
+                var pageNum = i + 1;
+                var link = document.createElement('a');
+                link.href = '#';
+                link.rel = i;
+                link.textContent = pageNum;
+                pagination.appendChild(link);
+            }
+            var tableRows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+            for (var j = 0; j < tableRows.length; j++) {
+                if (j < rowsShown) {
+                    tableRows[j].style.display = 'table-row';
+                } else {
+                    tableRows[j].style.display = 'none';
+                }
+            }
+            var paginationLinks = pagination.getElementsByTagName('a');
+            paginationLinks[0].classList.add('active');
+            for (var k = 0; k < paginationLinks.length; k++) {
+                paginationLinks[k].addEventListener('click', function() {
+                    var pageNum = parseInt(this.getAttribute('rel'));
+                    var startItem = pageNum * rowsShown;
+                    var endItem = startItem + rowsShown;
+                    for (var l = 0; l < tableRows.length; l++) {
+                        if (l >= startItem && l < endItem) {
+                            tableRows[l].style.display = 'table-row';
+                        } else {
+                            tableRows[l].style.display = 'none';
+                        }
+                    }
+                    for (var m = 0; m < paginationLinks.length; m++) {
+                        paginationLinks[m].classList.remove('active');
+                    }
+                    this.classList.add('active');
+                });
+            }
+        }
     </script>
 </body>
 </html>
