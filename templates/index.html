@@ -14,12 +14,12 @@
         }
 
         .spinner-text {
-        display: none;
-    }
-    .spinner-text.show {
-        display: inline-block;
-    }
+            display: none;
+        }
 
+        .spinner-text.show {
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -29,12 +29,15 @@
                 <div class="card card-custom">
                     <div class="card-body">
                         <h1 class="card-title text-center">Shelf-Life File Upload</h1>
-                        <form action="/upload" method="post" enctype="multipart/form-data">
+                        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
                             <div class="input-group mb-3">
                                 <input type="file" class="form-control" name="file">
-                                <button class="btn btn-secondary" type="submit">Upload</button>
+                                <button id="uploadButton" class="btn btn-secondary" type="submit">Upload</button>
                             </div>
-                            <!-- Additions -->
+                            <div id="uploadSpinner" class="text-center mb-2">
+                                <div class="spinner-border" role="status"></div>
+                                <span id="progressText" class="spinner-text">Uploading...</span>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -43,5 +46,24 @@
     </div>
     <!-- Bootstrap JS (Optional) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var uploadForm = document.getElementById('uploadForm');
+            var uploadSpinner = document.getElementById('uploadSpinner');
+            var progressText = document.getElementById('progressText');
+
+            uploadForm.addEventListener('submit', function () {
+                uploadSpinner.style.display = 'block'; // Show spinner
+                progressText.style.display = 'inline-block'; // Show progress text
+            });
+
+            // You may want to hide the spinner and progress text once the upload is complete.
+            // For demonstration purposes, I'll just simulate a delay here.
+            setTimeout(function () {
+                uploadSpinner.style.display = 'none'; // Hide spinner
+                progressText.style.display = 'none'; // Hide progress text
+            }, 3000); // Simulate a 3-second delay
+        });
+    </script>
 </body>
 </html>
