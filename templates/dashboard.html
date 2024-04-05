@@ -3,33 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <title>Dashboard</title>
+    <!-- Include Highcharts library -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
     <!-- Bootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            padding: 20px;
         }
-        th, td {
-            border: 1px solid #dddddd;
-            text-align: left;
-            padding: 8px;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        canvas {
-            max-width: 400px;
+        .chart-container {
+            max-width: 100%;
             margin: auto;
-            display: block;
+        }
+        .full-width {
+            width: 100%;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container-fluid">
         <h1 class="text-center">Dashboard</h1>
         
         <div class="row justify-content-center">
@@ -57,75 +53,131 @@
         </div>
 
         <div class="row justify-content-center">
-            <div class="col-md-8">
-                <h2>Chart</h2>
-                <canvas id="pieChart" width="400" height="400"></canvas>
+            <div class="col-md-6">
+                <div class="card">
+                    <h2 class="card-title text-center">Pie Chart</h2>
+                    <div id="pieChart" class="chart-container"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <h2 class="card-title text-center">Bar Chart</h2>
+                    <div id="barChart" class="chart-container"></div>
+                </div>
             </div>
         </div>
 
         <div class="row justify-content-center">
-                <h2>Filtered Data</h2>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Item Number</th>
-                            <th>Item Number Description</th>
-                            <th>Final Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in data %}
-                        <tr>
-                            <td>{{ row['Date'] }}</td>
-                            <td>{{ row['Item Number'] }}</td>
-                            <td>{{ row['Item Number Description'] }}</td>
-                            <td>{{ row['Final Score'] }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="col-md-12">
+                <div class="card">
+                    <h2 class="card-title text-center">Filtered Data</h2>
+                    <table class="table full-width">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Item Number</th>
+                                <th>Item Number Description</th>
+                                <th>Final Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in data %}
+                            <tr>
+                                <td>{{ row['Date'] }}</td>
+                                <td>{{ row['Item Number'] }}</td>
+                                <td>{{ row['Item Number Description'] }}</td>
+                                <td>{{ row['Final Score'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Bootstrap JS (Optional) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-        var ctx = document.getElementById('pieChart').getContext('2d');
-        var pieChart = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: [{% for score, data in counts.items() %}"{{ score }}",{% endfor %}],
-                datasets: [{
-                    label: 'Score Distribution',
-                    data: [{% for score, data in counts.items() %}{{ data.percentage }},{% endfor %}],
-                    backgroundColor: [
-                        'rgba(79, 205, 100, 0.6)',
-                        'rgba(109, 73, 157, 0.6)',
-                        'rgba(111, 206, 225, 0.6)',
-                        'rgba(224, 48, 35, 0.6)'
-                    ]
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top', // Adjust as needed
-                    },
-                    datalabels: {
-                        formatter: function(value, context) {
-                            return context.dataset.data[context.dataIndex] + '%';
-                        },
-                        color: '#fff',
-                        font: {
-                            weight: 'bold',
-                            size: 16,
-                            family: 'Arial'
+        document.addEventListener('DOMContentLoaded', function () {
+            // Prepare data for the pie chart
+            var pieChartData = [];
+            {% for score, data in counts.items() %}
+                pieChartData.push({ name: "{{ score }}", y: {{ data.percentage }} });
+            {% endfor %}
+
+            // Render the pie chart
+            Highcharts.chart('pieChart', {
+                chart: {
+                    type: 'pie'
+                },
+                title: {
+                    text: 'Score Distribution'
+                },
+                series: [{
+                    name: 'Score Distribution',
+                    data: pieChartData,
+                    showInLegend: true
+                }],
+                plotOptions: {
+                    pie: {
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b>: {point.percentage:.1f} %'
                         }
                     }
+                },
+                tooltip: {
+                    pointFormat: '<b>{point.name}</b>: {point.percentage:.1f} %'
+                },
+                legend: {
+                    align: 'center',
+                    verticalAlign: 'bottom',
+                    layout: 'horizontal'
                 }
-            }
+            });
+
+            // Prepare data for the bar chart
+            var barChartData = [];
+            {% for score, data in counts.items() %}
+                barChartData.push({ name: "{{ score }}", y: {{ data.count }} });
+            {% endfor %}
+
+            // Render the bar chart
+            Highcharts.chart('barChart', {
+                chart: {
+                    type: 'bar'
+                },
+                title: {
+                    text: 'Score Counts'
+                },
+                xAxis: {
+                    categories: [{% for score, data in counts.items() %}"{{ score }}",{% endfor %}],
+                    title: {
+                        text: 'Score'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Count'
+                    }
+                },
+                series: [{
+                    name: 'Count',
+                    data: barChartData,
+                    colorByPoint: true, // Use distinct colors for each bar
+                    dataLabels: {
+                        enabled: true,
+                        color: '#000',
+                        align: 'center',
+                        formatter: function() {
+                            return this.y; // Display the count on each bar
+                        }
+                    }
+                }]
+            });
         });
     </script>
 </body>
