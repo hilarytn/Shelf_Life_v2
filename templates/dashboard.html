@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <title>Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        canvas {
+            max-width: 400px;
+            margin: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Dashboard</h1>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <h2>Scores Summary</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Score</th>
+                            <th>Count</th>
+                            <th>Percentage (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for score, data in counts.items() %}
+                        <tr>
+                            <td>{{ score }}</td>
+                            <td>{{ data.count }}</td>
+                            <td>{{ data.percentage }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <h2>Chart</h2>
+                <canvas id="pieChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+                <h2>Filtered Data</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Item Number</th>
+                            <th>Item Number Description</th>
+                            <th>Final Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr>
+                            <td>{{ row['Date'] }}</td>
+                            <td>{{ row['Item Number'] }}</td>
+                            <td>{{ row['Item Number Description'] }}</td>
+                            <td>{{ row['Final Score'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        var ctx = document.getElementById('pieChart').getContext('2d');
+        var pieChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: [{% for score, data in counts.items() %}"{{ score }}",{% endfor %}],
+                datasets: [{
+                    label: 'Score Distribution',
+                    data: [{% for score, data in counts.items() %}{{ data.percentage }},{% endfor %}],
+                    backgroundColor: [
+                        'rgba(79, 205, 100, 0.6)',
+                        'rgba(109, 73, 157, 0.6)',
+                        'rgba(111, 206, 225, 0.6)',
+                        'rgba(224, 48, 35, 0.6)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top', // Adjust as needed
+                    },
+                    datalabels: {
+                        formatter: function(value, context) {
+                            return context.dataset.data[context.dataIndex] + '%';
+                        },
+                        color: '#fff',
+                        font: {
+                            weight: 'bold',
+                            size: 16,
+                            family: 'Arial'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
